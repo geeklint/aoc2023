@@ -201,3 +201,70 @@ fn main() {
     dbg!(&inside);
     dbg!(inside.len());
 }
+
+/// an alternitive solution I had the idea for after solving it the first time
+fn main_alt() {
+    let mut input = std::fs::read("input").unwrap();
+    let width = input.iter().position(|&ch| ch == b'\n').unwrap() as i32;
+    input.retain(|&ch| ch != b'\n');
+    let start = input.iter().position(|&ch| ch == b'S').unwrap() as i32;
+
+    fn offsets(ch: u8, width: i32) -> [i32; 2] {
+        match ch {
+            b'|' => [-width, width],
+            b'-' => [-1, 1],
+            b'L' => [-width, 1],
+            b'J' => [-width, -1],
+            b'7' => [-1, width],
+            b'F' => [1, width],
+            _ => panic!(),
+        }
+    }
+
+    let first_step = if matches!(input[(start - width) as usize], b'|' | b'7' | b'F') {
+        start - width
+    } else if matches!(input[(start - 1) as usize], b'-' | b'L' | b'F') {
+        start - 1
+    } else if matches!(input[(start + 1) as usize], b'-' | b'J' | b'7') {
+        start + 1
+    } else if matches!(input[(start + width) as usize], b'|' | b'L' | b'J') {
+        start + width
+    } else {
+        panic!()
+    };
+    let mut path = vec![start];
+    let mut prev = start;
+    let mut step = first_step;
+    while step != start {
+        path.push(step);
+        let next = offsets(input[step as usize], width)
+            .into_iter()
+            .map(|off| step + off)
+            .find(|&pos| pos != prev)
+            .unwrap();
+        prev = step;
+        step = next;
+    }
+    let mut sum = 0;
+    let min = path.iter().copied().min().unwrap();
+    let max = path.iter().copied().max().unwrap();
+    let tops = if first_step == start - width {
+        &[b'J', b'L', b'|', b'S'][..]
+    } else {
+        &[b'J', b'L', b'|'][..]
+    };
+    for i in min..max {
+        if path.contains(&i) {
+            continue;
+        }
+        let eol = ((i / width) + 1) * width;
+        let intersects = (i..eol)
+            .filter(|&j| tops.contains(&input[j as usize]) && path.contains(&j))
+            .count();
+        if intersects % 2 == 1 {
+            input[i as usize] = b'I';
+            sum += 1;
+        }
+    }
+    dbg!(sum);
+}
