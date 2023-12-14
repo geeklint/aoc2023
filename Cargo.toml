@@ -15,3 +15,6 @@ members = [
     "day12",
     "day13",
 ]
+
+[profile.release]
+panic = "abort"
